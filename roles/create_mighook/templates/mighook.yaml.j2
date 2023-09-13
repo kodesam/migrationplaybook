@@ -1,0 +1,11 @@
+apiVersion: migration.openshift.io/v1alpha1
+kind: MigHook
+metadata:
+  name: {{ mtc_hook_name }}
+  namespace: openshift-migration
+spec:
+  activeDeadlineSeconds: {{ mtc_hook_timeout }}
+  custom: false 
+  image: {{ mtc_hook_image }} 
+  playbook: {{ mtc_hook_content }} 
+  targetCluster: {{ mtc_hook_target }}

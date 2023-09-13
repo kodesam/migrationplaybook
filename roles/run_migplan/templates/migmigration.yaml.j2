@@ -1,0 +1,18 @@
+apiVersion: migration.openshift.io/v1alpha1
+kind: MigMigration
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: {{ mtc_migmigration_name }}
+  namespace: openshift-migration
+spec:
+  # [!] Set 'stage: true' to run a 'Stage Migration' and skip quiescing of Pods on the source cluster
+  stage: {{ mtc_migmigration_stage }}
+  # [!] Set 'quiescePods: true' to scale down Pods on the source cluster after the 'Backup' stage of a migration has finished
+  quiescePods: {{ mtc_migmigration_quiesce }}
+  # [!] A completed migration is rolled back if true
+  rollback: {{ mtc_migmigration_rollback }}
+
+  migPlanRef:
+    name: {{ mtc_migplan_name }} 
+    namespace: openshift-migration

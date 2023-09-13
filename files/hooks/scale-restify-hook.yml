@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Scale dc/restify to 3 replicas on parks-app-1 ns
+    k8s_scale:
+      api_version: v1
+      kind: DeploymentConfig
+      name: restify
+      namespace: parks-app-1
+      replicas: 3
+      wait_timeout: 60
+

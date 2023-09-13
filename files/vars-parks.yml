@@ -1,0 +1,24 @@
+
+# Migration plan
+mtc_migtag: parks
+
+# Migration hooks
+mtc_use_hook: true
+mtc_hook_phase: PostRestore #PreBackup,PostBackup,PreRestore,PostRestore
+mtc_hook_target: destination
+mtc_hook_name: scale-restify-hook
+mtc_hook_file: files/hooks/{{ mtc_hook_name }}.yml
+mtc_hook_image: registry.redhat.io/rhmtc/openshift-migration-hook-runner-rhel7@sha256:779af420a02683fc8288b56d70e1d026fdc790f7248d4aa68a256b811c20608e
+mtc_hook_timeout: 300
+
+#
+# APPs generic vars
+#
+ns_to_migrate:
+  - name: parks-app-0
+    test_cmd: "curl -s restify-parks-app-0.{{ src_app_domain }} | grep 'Map of Parks'"
+  - name: parks-app-1
+    test_cmd: "curl -s restify-parks-app-1.{{ src_app_domain }} | grep 'Map of Parks'"
+  - name: parks-app-2
+    test_cmd: "curl -s restify-parks-app-2.{{ src_app_domain }} | grep 'Map of Parks'"
+

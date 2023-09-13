@@ -1,0 +1,12 @@
+
+# Migration plan
+mtc_migtag: file-uploader0
+
+
+#
+# APPs generic vars
+#
+ns_to_migrate:
+  - name: file-uploader-0
+    test_cmd: "curl -s http://file-uploader-file-uploader-0.{{ src_app_domain }}/listfiles.php | grep 'file-2'"
+

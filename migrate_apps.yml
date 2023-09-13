@@ -1,0 +1,26 @@
+---
+- name: DO326 - Automating Application Migration Using the MTC API with Ansible
+  hosts: utility
+  vars_files:
+    - vars/defaults.yml
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+  roles:
+    - role: check_mtc
+      tags: check_mtc
+    - role: check_apps
+      vars:
+        check_mig: pre
+      tags: check_pre
+    - role: create_mighook
+      when: mtc_use_hook is defined and mtc_use_hook
+      tags: create_mighook
+    - role: create_migplan
+      tags: create_migplan
+    - role: run_migplan
+      tags: run_migplan
+    - role: check_apps
+      vars:
+        check_mig: pos
+      tags: check_pos
+

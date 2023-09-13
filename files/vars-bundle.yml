@@ -1,0 +1,18 @@
+
+# Migration plan
+mtc_migtag: bundle
+
+
+#
+# APPs generic vars
+#
+ns_to_migrate:
+  - name: hello-openshift-0
+    test_cmd: "curl -s hello-openshift-hello-openshift-0.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: hello-openshift-1
+    test_cmd: "curl -s hello-openshift-hello-openshift-1.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: parks-app-0
+    test_cmd: "curl -s restify-parks-app-0.{{ src_app_domain }} | grep 'Map of Parks'"
+  - name: parks-app-1
+    test_cmd: "curl -s restify-parks-app-1.{{ src_app_domain }} | grep 'Map of Parks'"
+

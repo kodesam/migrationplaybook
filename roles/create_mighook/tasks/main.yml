@@ -1,0 +1,55 @@
+---
+- name: Generate mtc_hook_content fact
+  set_fact:
+   mtc_hook_content: "{{ lookup('file', mtc_hook_file )| b64encode }}"
+
+- name: Ensure k8s manifests directory exists
+  file:
+    path: "{{ manifests_dir }}"
+    state: directory
+
+- name: Create MigHook manifest
+  template:
+    src: mighook.yaml.j2
+    dest: "{{ manifests_dir }}/mighook-{{ timestamp }}.yaml"
+
+- name: Create MigHook resource
+  kubernetes.core.k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    src: "{{ manifests_dir }}/mighook-{{ timestamp }}.yaml"
+
+- name: Monitor the MigHook resource creation
+  vars:
+    mighook_msg: "{{ mighook|json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    mighook_msg_ready: "The hook is ready."
+  kubernetes.core.k8s_info:
+    api: migration.openshift.io/v1alpha1
+    kind: MigHook
+    namespace: openshift-migration
+    name: "{{ mtc_hook_name }}"
+  register: mighook
+  until: |
+         ( mighook is defined )
+         and
+         ( mighook_msg[0] is defined )
+         and
+         ( mighook_msg_ready in mighook_msg[0] )
+  failed_when: "'HIDE' in mighook"
+  retries: 10
+  delay: 10
+
+- name: Check that MigHook is Ready
+  vars:
+    mighook_msg: "{{ mighook | json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    mighook_msg_ready: "The hook is ready."
+  assert:
+    that:
+      - mighook_msg is defined
+      - mighook_msg[0] is defined
+      - mighook_msg_ready in mighook_msg[0]
+    fail_msg: "MigHook '{{ mtc_hook_name }}' NOT correctly created. {{ mighook_msg[0]|default() }}"
+    success_msg: "MigHook '{{ mtc_hook_name }}' correctly created. {{ mighook_msg[0]|default() }}"
+

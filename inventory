@@ -1,0 +1,9 @@
+[installer]
+installer.ocp3.example.com ansible_user=lab ansible_ssh_private_key_file=/home/student/.ssh/lab_rsa
+
+[utility]
+utility.lab.example.com ansible_user=lab ansible_ssh_private_key_file=/home/student/.ssh/lab_rsa
+
+[workstation]
+workstation.lab.example.com
+

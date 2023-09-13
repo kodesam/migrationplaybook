@@ -1,0 +1,36 @@
+apiVersion: migration.openshift.io/v1alpha1
+kind: MigPlan
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: {{ mtc_migplan_name  }}
+  namespace: openshift-migration
+spec:
+  srcMigClusterRef:
+    name: {{ mtc_src_cluster }}
+    namespace: openshift-migration
+
+  destMigClusterRef:
+    name: {{ mtc_trg_cluster }}
+    namespace: openshift-migration
+  indirectImageMigration: {{ mtc_indirect_image }} 
+  indirectVolumeMigration: {{ mtc_indirect_volume }}
+
+  migStorageRef:
+    name: {{ mtc_replication }}
+    namespace: openshift-migration
+
+{% if mtc_use_hook %}
+  hooks: 
+  - executionNamespace: openshift-migration
+    phase: {{ mtc_hook_phase }} 
+    reference:
+      name: {{ mtc_hook_name }} 
+      namespace: openshift-migration
+    serviceAccount: migration-controller
+{% endif %}
+
+  namespaces:
+{% for ns in ns_to_migrate %}
+  - {{ ns.name }}
+{% endfor %} 

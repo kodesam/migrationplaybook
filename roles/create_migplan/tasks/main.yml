@@ -1,0 +1,62 @@
+---
+- name: Ensure k8s manifests directory exists
+  file:
+    path: "{{ manifests_dir }}"
+    state: directory
+
+- name: Create MigPlan manifest
+  template:
+    src: migplan.yaml.j2
+    dest: "{{ manifests_dir }}/migplan.yaml"
+
+- name: Create MigPlan resource
+  kubernetes.core.k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    src: "{{ manifests_dir }}/migplan.yaml"
+
+- name: Monitor the MigPlan resource creation
+  vars:
+    migplan_msg: "{{ migplan|json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    migplan_msg_ready: "The migration plan is ready."
+  kubernetes.core.k8s_info:
+    api: migration.openshift.io/v1alpha1
+    kind: MigPlan
+    namespace: openshift-migration
+    name: "{{ mtc_migplan_name }}"
+  register: migplan
+  until: |
+         ( migplan is defined )
+         and
+         ( migplan_msg[0] is defined )
+         and
+         ( migplan_msg_ready in migplan_msg[0] )
+  failed_when: "'HIDE' in migplan"
+  retries: 10
+  delay: 10
+
+- name: Check that MigPlan is Ready
+  vars:
+    migplan_msg: "{{ migplan | json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    migplan_msg_ready: "The migration plan is ready."
+  assert:
+    that:
+      - migplan_msg is defined
+      - migplan_msg[0] is defined
+      - migplan_msg_ready in migplan_msg[0]
+    fail_msg: "MigPlan '{{ mtc_migplan_name }}' NOT correctly created. {{ migplan_msg[0]|default() }}"
+    success_msg: "MigPlan '{{ mtc_migplan_name }}' correctly created. {{ migplan_msg[0]|default() }}"
+
+- name: Check that MigPlan is NOT in suspended state
+  vars:
+    migplan_msg: "{{ migplan | json_query(\"resources[].status.conditions[?category=='Advisory'].message\") }}"
+    migplan_msg_suspend: "The migrations plan is in suspended state"
+  assert:
+    that:
+      - migplan_msg is defined
+      - migplan_msg[0] is defined
+      - not migplan_msg[0]|flatten|trim|string|regex_search('.*' + migplan_msg_suspend)
+    fail_msg: "MigPlan '{{ mtc_migplan_name }}' in suspended state (already migrated?). Remove the '{{ mtc_migplan_name }}' MigPlan or create a new one using a different name. {{ migplan_msg[0]|default() }}"
+    success_msg: "MigPlan '{{ mtc_migplan_name }}' not in suspended state."

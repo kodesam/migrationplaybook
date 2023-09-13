@@ -1,0 +1,52 @@
+---
+- name: Ensure k8s manifests directory exists
+  file:
+    path: "{{ manifests_dir }}"
+    state: directory
+
+- name: Create MigMigration manifest
+  template:
+    src: migmigration.yaml.j2
+    dest: "{{ manifests_dir }}/migmigration-{{ timestamp }}.yaml"
+
+- name: Create MigMigration resource
+  kubernetes.core.k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    src: "{{ manifests_dir }}/migmigration-{{ timestamp }}.yaml"
+
+- name: Monitor the MigMigration resource creation (migration plan execution)
+  vars:
+    migmigration_phase: "{{ migmigration|json_query(\"resources[].status.phase\") }}"
+    migmigration_msg_ready: "The migration has completed successfully."
+  kubernetes.core.k8s_info:
+    api: migration.openshift.io/v1alpha1
+    kind: MigMigration
+    namespace: openshift-migration
+    name: "{{ mtc_migmigration_name }}"
+  register: migmigration
+  until: |
+         ( migmigration is defined and migmigration_phase is defined )
+         and
+         ( migmigration_phase[0] is defined )
+         and
+         ( migmigration_phase[0] == "Completed" )
+  failed_when: "'HIDE' in migmigration"
+  retries: 60
+  delay: 30
+
+- name: Check that MigMigration is completed
+  vars:
+    migmigration_phase: "{{ migmigration|json_query(\"resources[].status.phase\") }}"
+    migmigration_msg: "{{ migmigration | json_query(\"resources[].status.conditions[?category=='Advisory'].message\") }}"
+    migmigration_msg_ready: "The migration has completed successfully."
+  assert:
+    that:
+      - migmigration_msg is defined
+      - migmigration_msg[0] is defined
+      - migmigration_msg_ready in migmigration_msg[0]
+    fail_msg: "MigMigration '{{ mtc_migmigration_name }}' that runs '{{ mtc_migplan_name }}' migration plan NOT completed. Phase: {{ migmigration_phase[0]|default() }} {{ migmigration_msg[0]|default() }}"
+    success_msg: "MigMigration '{{ mtc_migmigration_name }}' that runs '{{ mtc_migplan_name }}' migration plan completed. Phase: {{ migmigration_phase[0]|default() }} {{ migmigration_msg[0]|default() }}"
+

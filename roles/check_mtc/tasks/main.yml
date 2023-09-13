@@ -1,0 +1,65 @@
+---
+- name: Get source MigCluster resource
+  kubernetes.core.k8s_info:
+    api: migration.openshift.io/v1alpha1
+    kind: MigCluster
+    namespace: openshift-migration
+    name: "{{ mtc_src_cluster }}"
+  register: src_migcluster
+
+- name: Check that source MigCluster is Ready
+  vars:
+    src_migcluster_msg: "{{ src_migcluster | json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    src_migcluster_msg_ready: "The cluster is ready."
+  assert:
+    that:
+      - src_migcluster_msg is defined
+      - src_migcluster_msg[0] is defined
+      - src_migcluster_msg_ready in src_migcluster_msg[0]
+    fail_msg: "Source cluster '{{ mtc_src_cluster }}' incorrectly registered on MTC. {{ src_migcluster_msg[0]|default() }}"
+    success_msg: "Source cluster '{{ mtc_src_cluster }}' correctly registered on MTC. {{ src_migcluster_msg[0]|default() }}"
+
+- name: Get target MigCluster resource
+  kubernetes.core.k8s_info:
+    api: migration.openshift.io/v1alpha1
+    kind: MigCluster
+    namespace: openshift-migration
+    name: "{{ mtc_trg_cluster }}"
+  register: trg_migcluster
+
+- name: Check that target MigCluster is Ready
+  vars:
+    trg_migcluster_msg: "{{ trg_migcluster | json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    trg_migcluster_msg_ready: "The cluster is ready."
+  assert:
+    that:
+      - trg_migcluster_msg is defined
+      - trg_migcluster_msg[0] is defined
+      - trg_migcluster_msg_ready in trg_migcluster_msg[0]
+    fail_msg: "Target cluster '{{ mtc_trg_cluster }}' incorrectly registered on MTC. {{ trg_migcluster_msg[0]|default() }}"
+    success_msg: "Target cluster '{{ mtc_trg_cluster }}' correctly registered on MTC. {{ trg_migcluster_msg[0]|default() }}"
+
+- name: Get MigStorage resource
+  kubernetes.core.k8s_info:
+    api: migration.openshift.io/v1alpha1
+    kind: MigStorage
+    namespace: openshift-migration
+    name: "{{ mtc_replication }}"
+  register: migstorage
+
+- name: Check that MigStorage is Ready
+  vars:
+    migstorage_msg: "{{ migstorage | json_query(\"resources[].status.conditions[?category=='Required'].message\") }}"
+    migstorage_msg_ready: "The storage is ready."
+  assert:
+    that:
+      - migstorage_msg is defined
+      - migstorage_msg[0] is defined
+      - migstorage_msg_ready in migstorage_msg[0]
+    fail_msg: "MigStorage replication repository '{{ mtc_replication }}' incorrectly registered on MTC. {{ migstorage_msg[0]|default() }}"
+    success_msg: "MigStorage replication repository '{{ mtc_replication }}' correctly registered on MTC. {{ migstorage_msg[0]|default() }}"
+
+#- debug:
+#    var: migstorage
+
+#- meta: end_play

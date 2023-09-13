@@ -1,0 +1,48 @@
+#
+# Playbook generic vars
+#
+manifests_dir: "~/.k8s_manifests"
+timestamp: "{{ ansible_date_time.iso8601_basic_short|regex_replace('\\D+','') }}"
+src_app_domain: "apps.ocp3.example.com"
+dst_app_domain: "apps.ocp4.example.com"
+
+#
+# MTC generic vars
+#
+# Source clusters, target clusters and replication repository
+mtc_src_cluster: ocp3
+mtc_trg_cluster: host
+mtc_replication: replication-repo
+
+# Migration plan
+mtc_migtag: hello
+mtc_migplan_name: "{{ mtc_migtag }}-migplan"
+mtc_indirect_image: true
+mtc_indirect_volume: false
+
+# Migration hooks
+mtc_use_hook: false
+
+# Migration plan execution
+mtc_migmigration_name: "{{ mtc_migtag }}-migmigration-{{ timestamp }}"
+mtc_migmigration_stage: false
+mtc_migmigration_quiesce: false
+mtc_migmigration_rollback: false
+
+#
+# APPs generic vars
+#
+ns_to_migrate:
+  - name: hello-openshift-0
+    test_cmd: "curl -s hello-openshift-hello-openshift-0.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: hello-openshift-1
+    test_cmd: "curl -s hello-openshift-hello-openshift-1.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: hello-openshift-2
+    test_cmd: "curl -s hello-openshift-hello-openshift-2.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: hello-openshift-3
+    test_cmd: "curl -s hello-openshift-hello-openshift-3.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: hello-openshift-4
+    test_cmd: "curl -s hello-openshift-hello-openshift-4.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+  - name: hello-openshift-5
+    test_cmd: "curl -s hello-openshift-hello-openshift-5.{{ src_app_domain }} | grep 'Hello OpenShift!'"
+

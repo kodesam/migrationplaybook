@@ -1,0 +1,62 @@
+---
+- name: Grace period to wait for migrated applications to start on target cluster
+  wait_for:
+    timeout: 60
+  when:
+    - check_mig is defined
+    - check_mig == 'pos'
+
+- name: Run pre-migration app smoke tests
+  shell: "echo {{ item.name }} && {{ item.test_cmd | replace( 'ocp4', 'ocp3' ) }}"
+  with_items: "{{ ns_to_migrate }}"
+  register: pre_tests
+  when:
+    - check_mig is defined
+    - check_mig == 'pre'
+
+- name: Run post-migration app smoke tests
+  shell: "echo {{ item.name }} && {{ item.test_cmd | replace( 'ocp3', 'ocp4' ) }}"
+  with_items: "{{ ns_to_migrate }}"
+  register: pos_tests
+  failed_when: "'HIDE' in pos_tests"
+  when:
+    - check_mig is defined
+    - check_mig == 'pos'
+
+- name: Register success namespace migrations
+  set_fact:
+    ns_mig_success: "{{ ns_mig_success|default([])|union([item.cmd.split(' ')[1]]) }}"
+  no_log: True
+  with_items: "{{ pos_tests.results }}"
+  when:
+    - item.skipped is not defined and item.rc == 0
+    - check_mig is defined
+    - check_mig == 'pos'
+
+- name: Register failed namespace migrations
+  set_fact:
+    ns_mig_fail: "{{ ns_mig_fail|default([])|union([item.cmd.split(' ')[1]]) }}"
+  no_log: True
+  with_items: "{{ pos_tests.results }}"
+  when:
+    - item.skipped is not defined and item.rc != 0
+    - check_mig is defined
+    - check_mig == 'pos'
+
+- name: Report success namespace migrations
+  debug:
+    msg: "{{ ns_mig_success }}"
+  when:
+    - ns_mig_success is defined
+    - check_mig is defined
+    - check_mig == 'pos'
+
+- name: Report failed namespace migrations
+  debug:
+    msg: "{{ ns_mig_fail }}"
+  failed_when: ns_mig_fail is defined
+  when:
+    - ns_mig_fail is defined
+    - check_mig is defined
+    - check_mig == 'pos'
+

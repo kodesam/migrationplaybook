@@ -1,0 +1,54 @@
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Patching cm/config message for target cluster
+    k8s:
+      definition:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: config
+          namespace: node-app-1
+        data:
+          message: "Hello world from RHOCP4!"
+      merge_type:
+        - strategic-merge
+        - merge
+  - name: Creating source route on the target cluster
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Route
+        metadata:
+          name: node-app-ocp3
+          namespace: node-app-1
+        spec:
+          host: node-app-node-app-1.apps.ocp3.example.com
+          port:
+            targetPort: 8080-tcp
+          tls:
+            termination: edge
+          to:
+            kind: Service
+            name: node-app
+            weight: 100
+          wildcardPolicy: None
+  - name: Force redeploy, scale down DeploymentConfig
+    k8s_scale:
+      api_version: v1
+      kind: DeploymentConfig
+      name: node-app
+      namespace: node-app-1
+      replicas: 0
+      wait_timeout: 60
+  - name: Force redeploy, scale up DeploymentConfig
+    k8s_scale:
+      api_version: v1
+      kind: DeploymentConfig
+      name: node-app
+      namespace: node-app-1
+      replicas: 1
+      wait_timeout: 60
+
